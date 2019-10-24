@@ -30,7 +30,7 @@ class Generator:
 
     def generateJobs(self):
         self.jobs = []
-        for i in range(self.numOfJobs):
+        for _ in range(self.numOfJobs):
             job = Job(self.numOfJobs)
             self.sumOfProcessingTimes = self.sumOfProcessingTimes + job.generateProcessingTime(self.min, self.max)
             self.jobs.append(job)

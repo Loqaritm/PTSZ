@@ -65,6 +65,12 @@ tryb 2.
 instancja, algorytm -> plik wynikowy
 
 
+## Algorytm Listowy:
+idee:
+Shortest Processing Time
+Longest Processing Time
+
+
 1. Generator
 2. Weryfikator
 3. Algorytm listowy

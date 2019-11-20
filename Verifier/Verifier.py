@@ -31,14 +31,20 @@ def verify(inputPath, pathToSolution):
         return tardiness
 
 def verifyAll(inputFolderPath, pathToSolutionFolder):
+    tardinesses = ""
     for i in range(50, 510, 50):
         tardiness = verify(inputFolderPath + '/' + str(i) + '.txt', pathToSolutionFolder + '/' + str(i) + '.txt')
         print('for i =', i, 'tardiness =', tardiness)
+        tardinesses = tardinesses + str(tardiness) + '\n'
+
+    with open(inputFolderPath + 'tardinesses.txt', 'w+') as file:
+        file.write(tardinesses)
 
 if __name__ == "__main__":
     if (sys.argv[1] == 'all'):
         pathToAllInputs = sys.argv[2]
         pathToAllOutputs = sys.argv[3]
+        # all
         # verify('inf132189', 'inf132189/dummy')
         verifyAll(pathToAllInputs, pathToAllOutputs)
         exit()

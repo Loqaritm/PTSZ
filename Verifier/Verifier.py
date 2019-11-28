@@ -72,13 +72,16 @@ if __name__ == "__main__":
         # 3 - output
         # run algorithm
 
-        timeBefore = time.time()
-        subprocess.call([sys.argv[2], sys.argv[1], sys.argv[3]])
-        timeAfter = time.time()
+        for i in range (50, 510, 50):
+            path_to_input = str(sys.argv[1]) + "/" + str(i) + ".txt"
+            timeBefore = time.time()
+            # sys.argv[1]
+            subprocess.call([sys.argv[2], path_to_input, sys.argv[3]])
+            timeAfter = time.time()
 
-        time = timeAfter - timeBefore
-        computedTardiness, isOk = verify(sys.argv[1], sys.argv[3])
-        print(str(computedTardiness), str(isOk), str(time))
+            timedupa = timeAfter - timeBefore
+            computedTardiness, isOk = verify(path_to_input, sys.argv[3])
+            print(str(computedTardiness), str(isOk), str(timedupa))
 
-        with open("wynikis.txt", 'w+') as file:
-            file.write(str(sys.argv[1]), str(isOk), str(time))
+            with open("wynikis.txt", 'a') as file:
+                file.write("{},{},{},{}\n".format(str(sys.argv[1]), str(isOk), str(timedupa), str(computedTardiness)))

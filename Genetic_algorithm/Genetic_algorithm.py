@@ -115,53 +115,13 @@ def crossover(firstPopulationMember, otherPopulationMember):
     firstSequence = firstPopulationMember.sequenceOfTasksOnMachines
     otherSequence = otherPopulationMember.sequenceOfTasksOnMachines
 
-    #TODO: might not work as this returns array not tuple
-
-    parent1left = [[], [], [], []]
-    parent1right = [[], [], [], []]
-    parent2left = [[], [], [], []]
-    parent2right = [[], [], [], []]
-
     child1 = [[], [], [], []]
     child2 = [[], [], [], []]
 
     for i in range(len(firstSequence)):
-        child1[i] = firstSequence[i][0:len(firstSequence[i])//2] + otherSequence[i][len(otherSequence[i])//2:]
-        child2[i] = otherSequence[i][0:len(otherSequence[i])//2] + firstSequence[i][len(firstSequence[i])//2:]
-
-        # parent1left[i] = firstSequence[i][0:len(firstSequence[i])//2]
-        # parent1right[i] = firstSequence[i][len(firstSequence[i])//2:]
-
-        # parent2left[i] = otherSequence[i][0:len(otherSequence[i])//2]
-        # parent2right[i] = otherSequence[i][len(otherSequence[i])//2:]
-
-
-
-    # onMachine0first = np.split(firstSequence[0], len(firstSequence[1]) // 2 )
-    # onMachine1first = np.split(firstSequence[1], len(firstSequence[1]) // 2 )
-    # onMachine2first = np.split(firstSequence[2], len(firstSequence[2]) // 2 )
-    # onMachine3first = np.split(firstSequence[3], len(firstSequence[3]) // 2 )
-
-    # onMachine0other = np.split(otherSequence[0], len(otherSequence[1]) // 2 )
-    # onMachine1other = np.split(otherSequence[1], len(otherSequence[1]) // 2 )
-    # onMachine2other = np.split(otherSequence[2], len(otherSequence[2]) // 2 )
-    # onMachine3other = np.split(otherSequence[3], len(otherSequence[3]) // 2 )
-
-    # #stitch them together
-    # firstChildSequenceOnMachines = [onMachine0first[0] + onMachine0other[1],
-    #                                 onMachine1first[0] + onMachine1other[1],
-    #                                 onMachine2first[0] + onMachine2other[1],
-    #                                 onMachine3first[0] + onMachine3other[1]]
-
-    # secondChildSequenceOnMachines = [onMachine0other[0] + onMachine0first[1],
-    #                                  onMachine1other[0] + onMachine1first[1],
-    #                                  onMachine2other[0] + onMachine2first[1],
-    #                                  onMachine3other[0] + onMachine3first[1]]
-
-    # firstChildSequenceOnMachines = np.asarray(firstChildSequenceOnMachines)
-    # secondChildSequenceOnMachines = np.asarray(secondChildSequenceOnMachines)
-
-    #TODO: create populationMembers from those
+        print(type(firstSequence[i]), type(otherSequence[i]))
+        child1[i] = np.append(firstSequence[i][0:len(firstSequence[i])//2], otherSequence[i][len(otherSequence[i])//2:])
+        child2[i] = np.append(otherSequence[i][0:len(otherSequence[i])//2], firstSequence[i][len(firstSequence[i])//2:])
 
     firstChildSequenceOnMachines = fixSequenceOfTasksOnMachines(child1, False)
     secondChildSequenceOnMachines = fixSequenceOfTasksOnMachines(child2, False)
@@ -173,22 +133,6 @@ if __name__ == "__main__":
     inputPath = 'ptsz-i3-prawa/inf127147/50.txt'
     tasks = loadData(inputPath)
     log(True, len(tasks))
-
-    # tasksWithMissing = tasks[:]
-    # tasksWithMissing.pop(1)
-
-    # log(True, type(tasksWithMissing))
-
-    # tasksOnMachines = []
-    # tasksOnMachines.append(tasksWithMissing[0:3])
-    # tasksOnMachines.append(tasksWithMissing[3:7])
-    # tasksOnMachines.append(tasksWithMissing[7:9])
-    # tasksOnMachines.append(tasksWithMissing[9:20])
-
-    # log(True, tasksOnMachines)
-    # tasksOnMachines = fixSequenceOfTasksOnMachines(tasksOnMachines, False)
-    
-    # log(True, tasksOnMachines)
 
     # create first population
     listAlgorithm = ListAlgorithm(inputPath, False)
@@ -208,10 +152,23 @@ if __name__ == "__main__":
     print(len(population))
     print(population[0])
 
-
-    population[1] = mutate(population[0])
-    print(population)
+    for i, pop in enumerate(population):
+        if i < 5:
+            population[i+1] = mutate(population[i])
+        elif i < 13:
+            population[i+1], population[i+2] = crossover(population[i], population[i-1])
     
-    population[2], population[3] = crossover(population[0], population[1])
     print(population)
+
+    # population[1] = mutate(population[0])
+    # print(population)
+    
+    # population[2], population[3] = crossover(population[0], population[1])
+    # print(population)
+
+    #TODO: Tweak first population
+    #TODO: add proper chances of mutation and crossover
+    #TODO: add validate (or anything else that actually gives back the proper score)
+    #TODO: add elitism
+    #TODO: make it fuckin ruuuuun
 

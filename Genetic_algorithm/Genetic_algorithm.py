@@ -1,6 +1,8 @@
 import numpy as np
 import sys
 import random
+import copy
+import time
 from List_algorithm import ListAlgorithm
 
 
@@ -10,8 +12,25 @@ tasks = []
 globalShouldLog = True
 # maxLen = 100
 
+maxTime = 500 # miliseconds
+chanceOfMutation = 30 # %
+
 populationSize = 15
 population = [0] * populationSize
+
+def computeTardiness(populationMember):
+    computedTardiness = 0
+
+    for machine in populationMember.sequenceOfTasksOnMachines:
+        timeNow = 0
+        for i, job in enumerate(machine):
+            timeNow = max(job.readyTime, timeNow) + job.processingTime
+
+            potentialTardiness = job.dueDate - timeNow
+            if (potentialTardiness < 0):
+                computedTardiness = computedTardiness + abs(potentialTardiness)
+
+    return computedTardiness
 
 def log(shouldLog, *arguments):
     if (shouldLog and globalShouldLog):
@@ -34,15 +53,37 @@ class Task:
         return "<Task id:%s>" % (self.id)
 
     def __init__(self, id, processingTime, readyTime, dueDate):
-        self.id = id
-        self.processingTime = processingTime
-        self.readyTime = readyTime
-        self.dueDate = dueDate
+        self.id = int(id)
+        self.processingTime = int(processingTime)
+        self.readyTime = int(readyTime)
+        self.dueDate = int(dueDate)
 
 # populationMember represents a whole sequence
 class PopulationMember:
     def __init__(self, sequenceOfTasksOnMachines):
         self.sequenceOfTasksOnMachines = sequenceOfTasksOnMachines
+        self.tardiness = self.computeTardiness()
+
+    def __lt__(self, other):
+        return self.tardiness < other.tardiness
+
+    # def __iter__(self):
+    #     return iter(self.sequenceOfTasksOnMachines)
+
+    def computeTardiness(self):
+        computedTardiness = 0
+
+        for machine in self.sequenceOfTasksOnMachines:
+            timeNow = 0
+            for i, job in enumerate(machine):
+                timeNow = max(job.readyTime, timeNow) + job.processingTime
+
+                potentialTardiness = job.dueDate - timeNow
+                if (potentialTardiness < 0):
+                    computedTardiness = computedTardiness + abs(potentialTardiness)
+
+        return computedTardiness
+
 
 def mutate(populationMember):
     sequenceOfTasksOnMachines = populationMember.sequenceOfTasksOnMachines[:]
@@ -54,6 +95,7 @@ def mutate(populationMember):
     taskChosen = sequenceOfTasksOnMachines[machineId][taskId]
 
     # remove the task from machine
+    # print("type of sequenceOfTasksOnMachine:", type(sequenceOfTasksOnMachines[machineId]))
     sequenceOfTasksOnMachines[machineId].remove(taskChosen)
 
     machineIdToPut = random.randint(0, numOfMachines-1)
@@ -74,7 +116,8 @@ def loadData(inputPath):
             one = file.readline().split()
             task = Task(i + 1, one[0], one[1], one[2])
             array.append(task)
-    
+
+        maxTime = 10 * N
     return array
 
 def fixSequenceOfTasksOnMachines(sequenceOfTasksOnMachines, shouldLog = False):
@@ -108,7 +151,9 @@ def fixSequenceOfTasksOnMachines(sequenceOfTasksOnMachines, shouldLog = False):
     log(shouldLog, splitMissingTasks)
 
     # put the tasks on machines
-    sequenceOfTasksOnMachines = [np.append(sequenceOfTasksOnMachines[i], splitMissingTasks[i]) for (i, line) in enumerate(sequenceOfTasksOnMachines)]
+    # sequenceOfTasksOnMachines = [np.append(sequenceOfTasksOnMachines[i], splitMissingTasks[i]) for (i, line) in enumerate(sequenceOfTasksOnMachines)]
+    sequenceOfTasksOnMachines = [[*sequenceOfTasksOnMachines[i], *splitMissingTasks[i]] for (i, line) in enumerate(sequenceOfTasksOnMachines)]
+    # print("Fixed sequence type is: ", type(sequenceOfTasksOnMachines))
     return sequenceOfTasksOnMachines
 
 def crossover(firstPopulationMember, otherPopulationMember):
@@ -119,18 +164,35 @@ def crossover(firstPopulationMember, otherPopulationMember):
     child2 = [[], [], [], []]
 
     for i in range(len(firstSequence)):
-        print(type(firstSequence[i]), type(otherSequence[i]))
-        child1[i] = np.append(firstSequence[i][0:len(firstSequence[i])//2], otherSequence[i][len(otherSequence[i])//2:])
-        child2[i] = np.append(otherSequence[i][0:len(otherSequence[i])//2], firstSequence[i][len(firstSequence[i])//2:])
+        # print(type(firstSequence[i]), type(otherSequence[i]))
+        # child1[i] = np.append(firstSequence[i][0:len(firstSequence[i])//2], otherSequence[i][len(otherSequence[i])//2:])
+        # child2[i] = np.append(otherSequence[i][0:len(otherSequence[i])//2], firstSequence[i][len(firstSequence[i])//2:])
+        # print(child1[i])
+        child1[i] = [*firstSequence[i][0:len(firstSequence[i])//2], *otherSequence[i][len(otherSequence[i])//2:]]
+        # print(child1[i])
+        child2[i] = [*otherSequence[i][0:len(otherSequence[i])//2], *firstSequence[i][len(firstSequence[i])//2:]]
 
     firstChildSequenceOnMachines = fixSequenceOfTasksOnMachines(child1, False)
     secondChildSequenceOnMachines = fixSequenceOfTasksOnMachines(child2, False)
 
     return PopulationMember(firstChildSequenceOnMachines), PopulationMember(secondChildSequenceOnMachines)
 
+
+def saveToFile(outputPath, bestPopulationMember):
+    with open(outputPath, 'w+') as file:
+        file.write(str(bestPopulationMember.tardiness))
+        for machine in bestPopulationMember.sequenceOfTasksOnMachines:
+            file.write('\n')
+            for job in machine:
+                file.write(str(job) + ' ')
+
+
 if __name__ == "__main__":
+    inputPath = sys.argv[1]
+    outputPath = sys.argv[2]
+
     # shouldLog = False
-    inputPath = 'ptsz-i3-prawa/inf127147/50.txt'
+    # inputPath = 'ptsz-i3-prawa/inf127147/50.txt'
     tasks = loadData(inputPath)
     log(True, len(tasks))
 
@@ -138,27 +200,39 @@ if __name__ == "__main__":
     listAlgorithm = ListAlgorithm(inputPath, False)
     listAlgorithm.algorithm()
     listAlgorithmSolution = listAlgorithm.jobsOnMachines
-    print(listAlgorithmSolution)
 
     # convert to proper task representation
     sequenceOfTasksOnMachinesListAlgorithmSolution = [[], [], [], []]
     for i in range(4):
         sequenceOfTasksOnMachinesListAlgorithmSolution[i] = [Task(id, tasks[id-1].processingTime, tasks[id-1].readyTime, tasks[id-1].dueDate) for id in listAlgorithmSolution[i]] 
         
-    print(sequenceOfTasksOnMachinesListAlgorithmSolution)
+    # print(sequenceOfTasksOnMachinesListAlgorithmSolution)
 
     
     population[0] = PopulationMember(sequenceOfTasksOnMachinesListAlgorithmSolution)
-    print(len(population))
-    print(population[0])
+    # print("List algorithm solution:", population[0].tardiness)
+    # print(len(population))
+    # print(population[0])
+    # print(computeTardiness(population[0]))
 
     for i, pop in enumerate(population):
         if i < 5:
-            population[i+1] = mutate(population[i])
+            population[i+1] = mutate(copy.deepcopy(population[i]))
+            # print(computeTardiness(population[i+1]))
         elif i < 13:
-            population[i+1], population[i+2] = crossover(population[i], population[i-1])
+            population[i+1], population[i+2] = crossover(copy.deepcopy(population[i]), copy.deepcopy(population[i-1]))
+            # print(computeTardiness(population[i+1]), computeTardiness(population[i+2]))
     
-    print(population)
+    # print(population)
+    # print("DUPAAAA")
+
+    # for i, pop in enumerate(population):
+        # print("Tardiness for population member number {0}: {1}".format(i, computeTardiness(pop) ))
+
+
+    population.sort()
+    # for i, pop in enumerate(population):
+        # print("Tardiness for population member number {0}: {1}, type is: {2}".format(i, computeTardiness(pop), type(pop)))
 
     # population[1] = mutate(population[0])
     # print(population)
@@ -172,3 +246,31 @@ if __name__ == "__main__":
     #TODO: add elitism
     #TODO: make it fuckin ruuuuun
 
+    current_milli_time = lambda: int(round(time.time() * 1000))
+    startTime = current_milli_time()
+    whileNumber = 0
+    while (current_milli_time() < startTime + maxTime):
+        newPopulation = []
+        # mutate
+        for pop in population:
+            # print(type(pop))
+            if (random.randrange(100) < chanceOfMutation):
+                # print("dupa", type(pop))
+                newPopulation.append(mutate(copy.deepcopy(pop)))
+
+        # fill the rest (or one more) with crossovered
+        for j in range((len(population) - len(newPopulation)) // 2):
+            temp1, temp2 = crossover(population[random.randrange(0, len(population))], population[random.randrange(0, len(population))])
+            newPopulation.append(temp1)
+            newPopulation.append(temp2)
+
+        population = population + newPopulation
+        population.sort()
+        
+        # temporary - take just 15 best
+        population = population[:15]
+
+        # print("loop number {} best tardiness is: {}".format(whileNumber, population[0].tardiness))
+        whileNumber = whileNumber + 1
+
+    saveToFile(outputPath, population[0])
